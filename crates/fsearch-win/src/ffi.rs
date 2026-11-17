@@ -3,6 +3,9 @@ pub const FSCTL_CREATE_USN_JOURNAL: u32 = 0x0009_00E7;
 pub const FSCTL_READ_USN_JOURNAL: u32 = 0x0009_00BB;
 pub const FSCTL_QUERY_USN_JOURNAL: u32 = 0x0009_00F7;
 
+pub const GENERIC_READ: u32 = 0x8000_0000;
+pub const DRIVE_FIXED: u32 = 3;
+
 #[repr(C)]
 pub struct MftEnumData {
     pub start_file_reference_number: u64,

@@ -7,13 +7,13 @@ use fsearch_core::collector::CollectError;
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
     CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-    GENERIC_READ, OPEN_EXISTING,
+    OPEN_EXISTING,
 };
 use windows_sys::Win32::System::IO::DeviceIoControl;
 
 use crate::ffi::{
     create_size, journal_size, read_size, CreateUsnJournalData, ReadUsnJournalData, UsnJournalData,
-    FSCTL_CREATE_USN_JOURNAL, FSCTL_QUERY_USN_JOURNAL, FSCTL_READ_USN_JOURNAL,
+    FSCTL_CREATE_USN_JOURNAL, FSCTL_QUERY_USN_JOURNAL, FSCTL_READ_USN_JOURNAL, GENERIC_READ,
 };
 
 const BUF_BYTES: usize = 1 << 18;

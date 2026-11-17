@@ -6,13 +6,13 @@ use fsearch_core::collector::{CollectError, Collector, RecordBatch};
 use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
     CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-    GENERIC_READ, OPEN_EXISTING,
+    OPEN_EXISTING,
 };
 use windows_sys::Win32::System::IO::DeviceIoControl;
 
 use crate::ffi::{
     journal_size, mft_enum_size, MftEnumData, UsnJournalData, FSCTL_ENUM_USN_DATA,
-    FSCTL_QUERY_USN_JOURNAL,
+    FSCTL_QUERY_USN_JOURNAL, GENERIC_READ,
 };
 
 const IOCTL_BUF: usize = 1 << 20;

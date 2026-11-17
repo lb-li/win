@@ -6,9 +6,11 @@ use windows_sys::Win32::Security::{
     GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY,
 };
 use windows_sys::Win32::Storage::FileSystem::{
-    GetDriveTypeW, GetLogicalDriveStringsW, GetVolumeInformationW, DRIVE_FIXED,
+    GetDriveTypeW, GetLogicalDriveStringsW, GetVolumeInformationW,
 };
 use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+
+use crate::ffi::DRIVE_FIXED;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Volume {
