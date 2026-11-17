@@ -78,13 +78,27 @@ export component AppWindow inherits Window {
                     return reject;
                 }
 
-                TextInput {
-                    text <=> root.query;
-                    edited(text) => { root.search(text); }
-                    accepted => { root.activate(root.selected); }
+                if root.query == "" : Text {
+                    text: "搜索文件…";
+                    color: Theme.muted;
                     font-size: 20px;
-                    color: Theme.text;
-                    placeholder-text: "搜索文件…";
+                    x: 14px;
+                    height: parent.height;
+                    vertical-alignment: center;
+                }
+
+                HorizontalLayout {
+                    padding-left: 14px;
+                    padding-right: 14px;
+
+                    TextInput {
+                        text <=> root.query;
+                        edited => { root.search(root.query); }
+                        accepted => { root.activate(root.selected); }
+                        font-size: 20px;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                    }
                 }
             }
         }
