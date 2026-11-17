@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, Timer, TimerMode, VecModel};
 
 use fsearch_core::engine::IndexEngine;
 use fsearch_core::index::snapshot::{IndexSnapshot, Store};
@@ -140,26 +140,12 @@ fn main() -> Result<(), slint::PlatformError> {
 
     #[cfg(windows)]
     {
-        apply_backdrop(&ui);
         spawn_indexer(engine.clone());
     }
 
     let result = ui.run();
     drop(timer);
     result
-}
-
-#[cfg(windows)]
-fn apply_backdrop(ui: &AppWindow) {
-    use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-
-    if let Ok(handle) = ui.window().window_handle().handle() {
-        if let RawWindowHandle::Win32(win32) = handle.as_raw() {
-            let hwnd = win32.hwnd.get() as isize;
-            let _ = fsearch_win::dwm::enable_mica(hwnd);
-            let _ = fsearch_win::dwm::enable_dark_titlebar(hwnd);
-        }
-    }
 }
 
 #[cfg(windows)]
