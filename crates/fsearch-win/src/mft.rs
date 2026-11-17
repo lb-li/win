@@ -3,7 +3,7 @@ use std::os::windows::ffi::OsStrExt;
 
 use fsearch_core::collector::usn_parse::parse_usn_records;
 use fsearch_core::collector::{CollectError, Collector, RecordBatch};
-use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
+use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Storage::FileSystem::{
     CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
     OPEN_EXISTING,
@@ -11,8 +11,8 @@ use windows_sys::Win32::Storage::FileSystem::{
 use windows_sys::Win32::System::IO::DeviceIoControl;
 
 use crate::ffi::{
-    journal_size, mft_enum_size, MftEnumData, UsnJournalData, FSCTL_ENUM_USN_DATA,
-    FSCTL_QUERY_USN_JOURNAL, GENERIC_READ,
+    create_size, journal_size, mft_enum_size, CreateUsnJournalData, MftEnumData, UsnJournalData,
+    GENERIC_READ, FSCTL_CREATE_USN_JOURNAL, FSCTL_ENUM_USN_DATA, FSCTL_QUERY_USN_JOURNAL,
 };
 
 const IOCTL_BUF: usize = 1 << 20;
@@ -65,22 +65,46 @@ unsafe fn query_journal(handle: HANDLE) -> Result<UsnJournalData, CollectError> 
         std::ptr::null_mut(),
     );
     if ok == 0 {
-        return Err(CollectError::Ioctl("FSCTL_QUERY_USN_JOURNAL".into()));
+        let code = GetLastError();
+        return Err(CollectError::Ioctl(format!(
+            "FSCTL_QUERY_USN_JOURNAL (error {code})"
+        )));
     }
     Ok(data)
+}
+
+unsafe fn ensure_journal(handle: HANDLE) -> Option<UsnJournalData> {
+    if let Ok(journal) = query_journal(handle) {
+        return Some(journal);
+    }
+    let create = CreateUsnJournalData {
+        maximum_size: 64 << 20,
+        allocation_delta: 8 << 20,
+    };
+    let mut returned = 0u32;
+    let created = DeviceIoControl(
+        handle,
+        FSCTL_CREATE_USN_JOURNAL,
+        &create as *const _ as *const _,
+        create_size(),
+        std::ptr::null_mut(),
+        0,
+        &mut returned,
+        std::ptr::null_mut(),
+    );
+    if created == 0 {
+        return None;
+    }
+    query_journal(handle).ok()
 }
 
 impl Collector for MftScanner {
     fn scan(&self) -> Result<RecordBatch, CollectError> {
         unsafe {
             let handle = open_volume(self.letter)?;
-            let journal = match query_journal(handle) {
-                Ok(journal) => journal,
-                Err(err) => {
-                    CloseHandle(handle);
-                    return Err(err);
-                }
-            };
+            let next_usn = ensure_journal(handle)
+                .map(|journal| journal.next_usn)
+                .unwrap_or(0);
 
             let mut buffer = vec![0u8; IOCTL_BUF];
             let mut start: u64 = 0;
@@ -104,8 +128,11 @@ impl Collector for MftScanner {
                     std::ptr::null_mut(),
                 );
                 if ok == 0 {
+                    let code = GetLastError();
                     CloseHandle(handle);
-                    return Err(CollectError::Ioctl("FSCTL_ENUM_USN_DATA".into()));
+                    return Err(CollectError::Ioctl(format!(
+                        "FSCTL_ENUM_USN_DATA (error {code})"
+                    )));
                 }
                 let (records, next) = parse_usn_records(&buffer[..returned as usize]);
                 all.extend(records);
@@ -118,7 +145,7 @@ impl Collector for MftScanner {
             CloseHandle(handle);
             Ok(RecordBatch {
                 records: all,
-                next_usn: journal.next_usn,
+                next_usn,
             })
         }
     }
