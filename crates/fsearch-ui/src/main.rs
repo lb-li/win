@@ -142,7 +142,7 @@ fn main() -> Result<(), slint::PlatformError> {
 
     #[cfg(windows)]
     {
-        spawn_indexer(engine.clone());
+        spawn_indexer(engine.clone(), ui_weak.clone());
     }
 
     let result = ui.run();
@@ -151,25 +151,72 @@ fn main() -> Result<(), slint::PlatformError> {
 }
 
 #[cfg(windows)]
-fn spawn_indexer(engine: Arc<IndexEngine>) {
+fn push_status(weak: &slint::Weak<AppWindow>, text: String) {
+    let weak = weak.clone();
+    let _ = slint::invoke_from_event_loop(move || {
+        if let Some(ui) = weak.upgrade() {
+            ui.set_status(text.into());
+        }
+    });
+}
+
+#[cfg(windows)]
+fn spawn_indexer(engine: Arc<IndexEngine>, weak: slint::Weak<AppWindow>) {
     use fsearch_core::collector::Collector;
     use fsearch_core::index::build::IndexBuilder;
 
     std::thread::spawn(move || {
+        if !fsearch_win::volume::is_elevated() {
+            push_status(
+                &weak,
+                "需要管理员权限才能索引全盘：请右键 exe → 以管理员身份运行".into(),
+            );
+            return;
+        }
+
         let volumes = fsearch_win::volume::list_volumes();
-        let Some(volume) = volumes.first() else {
+        let Some(volume) = volumes.first().cloned() else {
+            push_status(&weak, "未找到可索引的 NTFS 固定卷".into());
             return;
         };
+
+        push_status(&weak, format!("正在索引 {}: ...", volume.letter));
+
         let scanner = fsearch_win::mft::MftScanner::new(volume.letter);
-        let Ok(batch) = scanner.scan() else {
-            return;
+        let batch = match scanner.scan() {
+            Ok(batch) => batch,
+            Err(err) => {
+                push_status(&weak, format!("索引失败：{err}"));
+                return;
+            }
         };
-        let mut builder = IndexBuilder::with_capacity(0, batch.next_usn, batch.records.len());
+
+        let enumerated = batch.records.len();
+        let mut builder = IndexBuilder::with_capacity(0, batch.next_usn, enumerated);
         for record in batch.records {
             builder.extend(record);
         }
         let snapshot = builder.finish();
+        let indexed = snapshot.record_count();
         let next_generation = engine.generation() + 1;
         engine.replace(snapshot, next_generation);
+
+        push_status(
+            &weak,
+            format!(
+                "{}: 已索引 {indexed} 项（MFT 枚举 {enumerated} 项）",
+                volume.letter
+            ),
+        );
+
+        let weak_for_refresh = weak.clone();
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(ui) = weak_for_refresh.upgrade() {
+                let query = ui.get_query().to_string();
+                if !query.trim().is_empty() {
+                    ui.invoke_search(query.into());
+                }
+            }
+        });
     });
 }

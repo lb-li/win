@@ -12,6 +12,7 @@ export component AppWindow inherits Window {
     in-out property <string> query;
     in property <[ResultRow]> rows: [];
     in property <int> selected: 0;
+    in property <string> status: "";
     callback search(string);
     callback activate(int);
     callback move-selection(int);
@@ -157,11 +158,22 @@ export component AppWindow inherits Window {
             }
         }
 
-        Text {
-            text: "↑↓ 选择 · Enter 打开 · Ctrl+Enter 定位 · Ctrl+C 复制 · Esc 清空";
-            color: Theme.muted;
-            font-size: 11px;
-            horizontal-alignment: center;
+        VerticalLayout {
+            spacing: 4px;
+
+            Text {
+                text: root.status;
+                color: Theme.muted;
+                font-size: 11px;
+                horizontal-alignment: center;
+            }
+
+            Text {
+                text: "↑↓ 选择 · Enter 打开 · Ctrl+Enter 定位 · Ctrl+C 复制 · Esc 清空";
+                color: Theme.muted;
+                font-size: 11px;
+                horizontal-alignment: center;
+            }
         }
     }
 }
