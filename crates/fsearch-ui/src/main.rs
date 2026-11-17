@@ -1,3 +1,5 @@
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
