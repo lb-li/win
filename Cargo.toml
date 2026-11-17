@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = ["crates/fsearch-core", "crates/fsearch-win", "crates/fsearch-ui"]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+
+[workspace.dependencies]
+rayon = "1.10"
+memchr = "2.7"
+arc-swap = "1.7"
+crossbeam-channel = "0.5"
+memmap2 = "0.9"
+smallvec = "1.13"
+ahash = "0.8"
+thiserror = "1.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"

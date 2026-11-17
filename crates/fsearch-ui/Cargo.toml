@@ -1,0 +1,20 @@
+[package]
+name = "fsearch-ui"
+edition.workspace = true
+version.workspace = true
+
+[[bin]]
+name = "fsearch"
+path = "src/main.rs"
+
+[dependencies]
+fsearch-core = { path = "../fsearch-core" }
+smallvec.workspace = true
+slint = { version = "1.8", features = ["raw-window-handle-06"] }
+raw-window-handle = "0.6"
+
+[target.'cfg(windows)'.dependencies]
+fsearch-win = { path = "../fsearch-win" }
+
+[build-dependencies]
+slint-build = "1.8"

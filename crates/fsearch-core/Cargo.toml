@@ -1,0 +1,14 @@
+[package]
+name = "fsearch-core"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+rayon.workspace = true
+memchr.workspace = true
+arc-swap.workspace = true
+crossbeam-channel.workspace = true
+memmap2.workspace = true
+smallvec.workspace = true
+ahash.workspace = true
+thiserror.workspace = true

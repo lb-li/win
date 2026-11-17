@@ -1,0 +1,153 @@
+import { Theme } from "theme.slint";
+
+export struct ResultRow {
+    before: string,
+    matched: string,
+    after: string,
+    path: string,
+    size: string,
+}
+
+export component AppWindow inherits Window {
+    in-out property <string> query;
+    in property <[ResultRow]> rows: [];
+    in property <int> selected: 0;
+    callback search(string);
+    callback activate(int);
+    callback move-selection(int);
+    callback close-requested;
+    callback reveal-selected;
+    callback copy-selected;
+
+    width: 760px;
+    height: 540px;
+    no-frame: true;
+    background: Theme.bg;
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 10px;
+
+        HorizontalLayout {
+            height: 28px;
+            alignment: end;
+
+            TouchArea {
+                width: 28px;
+                height: 28px;
+                clicked => { root.close-requested(); }
+
+                Text {
+                    text: "×";
+                    color: Theme.muted;
+                    font-size: 16px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        Rectangle {
+            height: 48px;
+            border-radius: 10px;
+            background: Theme.surface;
+            animate background { duration: 120ms; easing: ease-out; }
+
+            FocusScope {
+                key-pressed(event) => {
+                    if (event.text == Key.UpArrow) {
+                        root.move-selection(-1);
+                        return accept;
+                    }
+                    if (event.text == Key.DownArrow) {
+                        root.move-selection(1);
+                        return accept;
+                    }
+                    if (event.text == Key.Escape) {
+                        root.query = "";
+                        return accept;
+                    }
+                    if (event.text == Key.Return && event.modifiers.control) {
+                        root.reveal-selected();
+                        return accept;
+                    }
+                    if (event.text == Key.C && event.modifiers.control) {
+                        root.copy-selected();
+                        return accept;
+                    }
+                    return reject;
+                }
+
+                TextInput {
+                    text <=> root.query;
+                    edited(text) => { root.search(text); }
+                    accepted => { root.activate(root.selected); }
+                    font-size: 20px;
+                    color: Theme.text;
+                    placeholder-text: "搜索文件…";
+                }
+            }
+        }
+
+        Rectangle {
+            vertical-stretch: 1;
+            background: transparent;
+
+            VerticalLayout {
+                spacing: 2px;
+
+                for row[i] in root.rows : Rectangle {
+                    height: 44px;
+                    border-radius: 8px;
+                    background: i == root.selected ? Theme.surface : transparent;
+                    animate background { duration: 90ms; easing: ease-out; }
+
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: 0px;
+
+                        Text {
+                            text: row.before;
+                            color: Theme.text;
+                            font-size: 14px;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: row.matched;
+                            color: Theme.accent;
+                            font-size: 14px;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: row.after;
+                            color: Theme.text;
+                            font-size: 14px;
+                            vertical-alignment: center;
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        Text {
+                            text: row.size;
+                            color: Theme.muted;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: row.path;
+                            color: Theme.muted;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: "↑↓ 选择 · Enter 打开 · Ctrl+Enter 定位 · Ctrl+C 复制 · Esc 清空";
+            color: Theme.muted;
+            font-size: 11px;
+            horizontal-alignment: center;
+        }
+    }
+}
